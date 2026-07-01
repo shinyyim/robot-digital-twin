@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<!--
+  ABB IRB 6700-175/3.05  — ACCURATE variant (the real workcell robot)
+  =====================================================================
+  This is the scaffold for the accurate twin. Fill it from RobotStudio +
+  ABB manual 3HAC044266-001 (see docs/robotstudio_export.md).
+
+  STATUS of each part:
+    [DONE]  joint <limit> values  -> real 175/3.05 datasheet (ranges + speeds)
+    [DONE]  joint <origin xyz>    -> link lengths from the official ABB product
+                                     specification 3HAC044265-001 Rev.Z, table
+                                     "Main dimensions of IRB 6700":
+                                       E (lower arm) = 1135 mm -> joint_3 z
+                                       G (upper arm) = 1592.5 mm -> joint_5 x
+                                     Base (780), a1 (320), elbow (200), flange
+                                     (200) are constant across the 6700 family.
+                                     Cross-checked: a1+E+G = 3047.5 ~= 3050 mm reach.
+    [TODO]  <mesh filename>       -> per-link meshes exported from RobotStudio.
+                                     Currently reusing the 200/2.60 STLs.
+                                     Put your exports in  175_305/visual/*.glb
+                                     and repoint the filenames below.
+
+  Reach 3.05 m · payload 175 kg. Datasheet axis data:
+    A1 +-170 @100 deg/s | A2 +85/-65 @90 | A3 +70/-180 @90
+    A4 +-300 @170       | A5 +-130 @170  | A6 +-360 @220
+-->
+<robot name="abb_irb6700_175_305">
+  <material name="abb_grey"><color rgba="0.85 0.85 0.85 1.0"/></material>
+
+  <!-- ==== LINKS — real 175/3.05 meshes (glTF) exported from RobotStudio.
+       Meshes were exported in the WORLD frame at home pose; the link-local
+       offset (-cumulative joint origin) is BAKED into the vertices, and the
+       glTF Z-up->Y-up root matrix was stripped, so each mesh now sits in its
+       own link frame, Z-up, with origin 0 0 0 (same convention as the STLs).
+       Cables + balancer cylinder/piston are extra cosmetic visuals. ==== -->
+  <link name="base_link">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/base_link.glb?v=2"/></geometry></visual>
+  </link>
+  <link name="link_1">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_1.glb?v=2"/></geometry></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_1_cable.glb?v=2"/></geometry></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/balancer_cylinder.glb?v=2"/></geometry></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/balancer_piston.glb?v=2"/></geometry></visual>
+  </link>
+  <link name="link_2">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_2.glb?v=2"/></geometry></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_2_cable.glb?v=2"/></geometry></visual>
+  </link>
+  <link name="link_3">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_3.glb?v=2"/></geometry></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_3_cable.glb?v=2"/></geometry></visual>
+  </link>
+  <link name="link_4">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_4.glb?v=2"/></geometry></visual>
+  </link>
+  <link name="link_5">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_5.glb?v=2"/></geometry></visual>
+  </link>
+  <link name="link_6">
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="visual/link_6.glb?v=2"/></geometry></visual>
+  </link>
+
+  <!-- ==== JOINTS ====
+       <limit> + <origin xyz> = DONE (real 175/3.05, ABB 3HAC044265-001 Rev.Z). -->
+  <joint name="joint_1" type="revolute">
+    <origin xyz="0 0 0.78" rpy="0 0 0"/>          <!-- base->axis2 height 780mm (family constant) -->
+    <parent link="base_link"/><child link="link_1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.96706" upper="2.96706" effort="0" velocity="1.74533"/>
+  </joint>
+  <joint name="joint_2" type="revolute">
+    <origin xyz="0.32 0 0" rpy="0 0 0"/>          <!-- a1 axis1->axis2 offset 320mm (family constant) -->
+    <parent link="link_1"/><child link="link_2"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.13446" upper="1.48353" effort="0" velocity="1.5708"/>
+  </joint>
+  <joint name="joint_3" type="revolute">
+    <origin xyz="0 0 1.135" rpy="0 0 0"/>         <!-- lower arm E=1135mm (175/3.05) -->
+    <parent link="link_2"/><child link="link_3"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.14159" upper="1.22173" effort="0" velocity="1.5708"/>
+  </joint>
+  <joint name="joint_4" type="revolute">
+    <origin xyz="0 0 0.2" rpy="0 0 0"/>           <!-- elbow offset 200mm (family constant) -->
+    <parent link="link_3"/><child link="link_4"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-5.23599" upper="5.23599" effort="0" velocity="2.96706"/>
+  </joint>
+  <joint name="joint_5" type="revolute">
+    <origin xyz="1.5925 0 0" rpy="0 0 0"/>        <!-- upper arm G=1592.5mm (175/3.05) -->
+    <parent link="link_4"/><child link="link_5"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.26893" upper="2.26893" effort="0" velocity="2.96706"/>
+  </joint>
+  <joint name="joint_6" type="revolute">
+    <origin xyz="0.2 0 0" rpy="0 0 0"/>           <!-- flange A=200mm (standard variant) -->
+    <parent link="link_5"/><child link="link_6"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-6.28319" upper="6.28319" effort="0" velocity="3.83972"/>
+  </joint>
+
+  <!-- frames -->
+  <link name="flange"/>
+  <joint name="joint_6-flange" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/><parent link="link_6"/><child link="flange"/>
+  </joint>
+  <link name="tool0"/>
+  <joint name="link_6-tool0" type="fixed">
+    <origin xyz="0 0 0" rpy="0 1.5708 0"/><parent link="flange"/><child link="tool0"/>
+  </joint>
+</robot>

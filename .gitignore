@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.local
+
+node_modules/
+dist/
+.vite/
+
+rapid/*.mod
+rapid/*.prg
+
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+data/**/*.glb
+data/**/*.gltf
+!data/**/.gitkeep
+
+# TS incremental build info
+*.tsbuildinfo
+
+# Obsidian vault symlink (machine-specific absolute path)
+obsidian

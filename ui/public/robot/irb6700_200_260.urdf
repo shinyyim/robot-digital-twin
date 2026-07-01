@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<!--
+  ABB IRB 6700-200/2.60  (open-source placeholder arm)
+  Converted from ros-industrial/abb  abb_irb6700_support  irb6700_200_260_macro.xacro
+  (kinetic-devel) into plain URDF for urdf-loader:
+    - ${prefix} removed, ${radians(d)} evaluated to radians
+    - collision geometry dropped (visual only, for rendering)
+    - xacro material includes replaced with an inline ABB-grey material
+    - mesh paths made relative to this URDF (served from /robot/)
+  Week 3-proper replaces this with a RobotStudio-validated 175/3.05 URDF
+  (see docs/robotstudio_export.md). Mimic joints (cylinder/piston gas strut)
+  are preserved; urdf-loader honors <mimic>.
+-->
+<robot name="abb_irb6700_200_260">
+  <material name="abb_grey">
+    <color rgba="0.85 0.85 0.85 1.0"/>
+  </material>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700/visual/base_link.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="link_1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700/visual/link_1.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="cylinder">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700/visual/cylinder.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="piston">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700/visual/piston.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="link_2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700_200_260/visual/link_2.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="link_3">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700_200_260/visual/link_3.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="link_4">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700_200_260/visual/link_4.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="link_5">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700/visual/link_5.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+  <link name="link_6">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/irb6700/visual/link_6.stl"/></geometry>
+      <material name="abb_grey"/>
+    </visual>
+  </link>
+
+  <joint name="joint_1" type="revolute">
+    <origin xyz="0 0 0.78" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.96706" upper="2.96706" effort="0" velocity="1.91986"/>
+  </joint>
+  <joint name="joint_2" type="revolute">
+    <origin xyz="0.32 0 0" rpy="0 0 0"/>
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.13446" upper="1.48353" effort="0" velocity="1.91986"/>
+  </joint>
+  <joint name="joint_3" type="revolute">
+    <origin xyz="0 0 1.125" rpy="0 0 0"/>
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.14159" upper="1.22173" effort="0" velocity="1.91986"/>
+  </joint>
+  <joint name="joint_4" type="revolute">
+    <origin xyz="0 0 0.2" rpy="0 0 0"/>
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-5.23599" upper="5.23599" effort="0" velocity="3.31613"/>
+  </joint>
+  <joint name="joint_5" type="revolute">
+    <origin xyz="1.1425 0 0" rpy="0 0 0"/>
+    <parent link="link_4"/>
+    <child link="link_5"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.26893" upper="2.26893" effort="0" velocity="2.61799"/>
+  </joint>
+  <joint name="joint_6" type="revolute">
+    <origin xyz="0.2 0 0" rpy="0 0 0"/>
+    <parent link="link_5"/>
+    <child link="link_6"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-6.28319" upper="6.28319" effort="0" velocity="3.66519"/>
+  </joint>
+
+  <joint name="cylinder_joint" type="revolute">
+    <origin xyz="-0.349 -0.194 -0.142" rpy="0 0 0"/>
+    <parent link="link_1"/>
+    <child link="cylinder"/>
+    <axis xyz="0 1 0"/>
+    <mimic joint="joint_2" multiplier="-0.25"/>
+    <limit lower="-0.28365" upper="0.37088" effort="0" velocity="100"/>
+  </joint>
+  <joint name="piston_joint" type="prismatic">
+    <origin xyz="0 0 0" rpy="0.20897 0 -1.5708"/>
+    <parent link="cylinder"/>
+    <child link="piston"/>
+    <axis xyz="0 1 0"/>
+    <mimic joint="joint_2" multiplier="0.15"/>
+    <limit lower="-0.25" upper="0.25" effort="0" velocity="100"/>
+  </joint>
+
+  <link name="base"/>
+  <joint name="base_link-base" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="base"/>
+  </joint>
+
+  <link name="flange"/>
+  <joint name="joint_6-flange" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="link_6"/>
+    <child link="flange"/>
+  </joint>
+
+  <link name="tool0"/>
+  <joint name="link_6-tool0" type="fixed">
+    <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+    <parent link="flange"/>
+    <child link="tool0"/>
+  </joint>
+</robot>

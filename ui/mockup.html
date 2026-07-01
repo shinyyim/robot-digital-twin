@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Robot Digital Twin — IRB 6700-175/3.05</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0d12;
+    --panel: #11161d;
+    --panel-2: #161c25;
+    --border: #1f2731;
+    --line: #2a3441;
+    --text: #d8e0eb;
+    --muted: #6f7c8e;
+    --dim: #4a5562;
+    --accent: #ffb547;
+    --accent-2: #38d4ff;
+    --print: #ffb547;
+    --travel: #38d4ff;
+    --ok: #5bd585;
+    --warn: #ff7a59;
+    --bad: #f24b5e;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif; font-size: 13px;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .app {
+    display: grid;
+    grid-template-rows: 48px 1fr 80px;
+    height: 100vh;
+  }
+
+  /* ====== Header ====== */
+  header {
+    display: flex; align-items: center; gap: 24px;
+    padding: 0 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    font-weight: 700; letter-spacing: 0.08em; font-size: 12px;
+    color: var(--text);
+  }
+  .brand .sub { color: var(--muted); margin-left: 8px; font-weight: 500; }
+  .modes { display: flex; gap: 4px; margin-left: 12px; }
+  .mode {
+    padding: 6px 14px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--muted); cursor: pointer; user-select: none;
+  }
+  .mode:hover { color: var(--text); }
+  .mode.active { background: var(--panel-2); color: var(--accent); }
+  .header-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 12px;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--muted); font-size: 11px;
+  }
+  .pill .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok); box-shadow: 0 0 8px var(--ok);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .robot-id { color: var(--text); font-weight: 500; }
+
+  /* ====== Main ====== */
+  main {
+    display: grid;
+    grid-template-columns: 260px 1fr 320px;
+    min-height: 0;
+  }
+  aside {
+    background: var(--panel);
+    overflow: auto;
+    border-right: 1px solid var(--border);
+  }
+  aside.right { border-right: none; border-left: 1px solid var(--border); }
+
+  .section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section h3 {
+    margin: 0 0 12px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+  }
+
+  /* layer list */
+  .layers { display: flex; flex-direction: column; gap: 2px; }
+  .layer {
+    display: grid; grid-template-columns: 24px 1fr auto;
+    gap: 8px; align-items: center;
+    padding: 6px 8px; border-radius: 4px;
+    cursor: pointer; font-size: 12px;
+  }
+  .layer:hover { background: var(--panel-2); }
+  .layer.active {
+    background: rgba(255,181,71,0.08);
+    color: var(--accent);
+  }
+  .layer .idx { color: var(--muted); }
+  .layer.active .idx { color: var(--accent); }
+  .layer .moves { color: var(--muted); font-size: 11px; }
+
+  /* part list */
+  .file-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 4px; cursor: pointer;
+    font-size: 12px;
+  }
+  .file-row:hover { background: var(--panel-2); }
+  .file-row .icon {
+    width: 14px; height: 14px;
+    border: 1px solid var(--dim); border-radius: 2px;
+  }
+  .file-row.active .icon {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .file-row .meta { margin-left: auto; color: var(--muted); font-size: 11px; }
+
+  /* ====== Viewport ====== */
+  .viewport {
+    position: relative;
+    background:
+      radial-gradient(ellipse at center, #131822 0%, #0a0d12 70%);
+    min-height: 0;
+  }
+  #canvas { width: 100%; height: 100%; display: block; }
+  .overlay {
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+  .overlay > * { pointer-events: auto; }
+
+  .axes-readout {
+    position: absolute; top: 12px; left: 12px;
+    background: rgba(17,22,29,0.85);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    backdrop-filter: blur(8px);
+  }
+  .axes-readout h4 {
+    margin: 0 0 8px; font-size: 9px;
+    letter-spacing: 0.14em; color: var(--muted); font-weight: 700;
+  }
+  .axis-row {
+    display: grid; grid-template-columns: 16px 60px 1fr;
+    gap: 8px; align-items: center; padding: 2px 0;
+  }
+  .axis-row .label { color: var(--muted); }
+  .axis-row .val { color: var(--text); text-align: right; }
+  .axis-row .bar {
+    height: 4px; background: var(--line); border-radius: 2px; position: relative; width: 80px;
+  }
+  .axis-row .bar::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--accent-2); border-radius: 2px;
+  }
+
+  .legend {
+    position: absolute; bottom: 12px; left: 12px;
+    background: rgba(17,22,29,0.85);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    backdrop-filter: blur(8px);
+    display: flex; gap: 16px; align-items: center;
+    font-size: 11px;
+  }
+  .legend .item { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .legend .swatch { width: 14px; height: 3px; border-radius: 2px; }
+
+  .view-tools {
+    position: absolute; top: 12px; right: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .btn-tool {
+    width: 32px; height: 32px;
+    background: rgba(17,22,29,0.85);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted); cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  .btn-tool:hover { color: var(--text); background: var(--panel-2); }
+  .btn-tool.active { color: var(--accent); border-color: var(--accent); }
+
+  .layer-badge {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(17,22,29,0.85);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 11px; letter-spacing: 0.06em;
+    backdrop-filter: blur(8px);
+  }
+  .layer-badge .big {
+    font-weight: 700; color: var(--accent); margin: 0 4px;
+  }
+
+  /* ====== Right panel ====== */
+  .telemetry-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .tile {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .tile .label {
+    font-size: 9px; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .tile .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 600;
+  }
+  .tile .unit { font-size: 11px; color: var(--muted); margin-left: 2px; }
+  .tile.accent .value { color: var(--accent); }
+  .tile.ok .value { color: var(--ok); }
+  .tile.warn .value { color: var(--warn); }
+
+  .joint-row {
+    display: grid; grid-template-columns: 24px 50px 1fr 60px;
+    gap: 8px; align-items: center;
+    padding: 4px 0; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .joint-row .name { color: var(--muted); font-weight: 600; }
+  .joint-row .val { color: var(--text); text-align: right; }
+  .joint-row .lim { color: var(--dim); text-align: right; font-size: 10px; }
+  .joint-bar {
+    height: 4px; background: var(--line); border-radius: 2px;
+    position: relative; overflow: hidden;
+  }
+  .joint-bar .fill {
+    position: absolute; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    border-radius: 2px;
+  }
+
+  .program-row {
+    display: flex; justify-content: space-between;
+    padding: 4px 0; font-size: 12px;
+  }
+  .program-row .k { color: var(--muted); }
+  .program-row .v { font-family: 'JetBrains Mono', monospace; }
+
+  /* ====== Footer ====== */
+  footer {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 24px; align-items: center;
+  }
+  .transport { display: flex; gap: 4px; }
+  .btn {
+    width: 36px; height: 36px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text);
+    cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.play { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn.stop { color: var(--warn); }
+  .btn.estop { background: var(--bad); color: #fff; border-color: var(--bad); font-weight: 700; }
+
+  .timeline {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .timeline-bar {
+    height: 12px; background: var(--line); border-radius: 6px;
+    position: relative; overflow: hidden;
+  }
+  .timeline-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    border-radius: 6px;
+    width: 38%;
+  }
+  .timeline-marker {
+    position: absolute; top: -2px; bottom: -2px;
+    width: 2px; background: #fff; left: 38%;
+  }
+  .timeline-marker::after {
+    content: ''; position: absolute; top: -4px; left: -4px;
+    width: 10px; height: 10px; background: #fff; border-radius: 50%;
+  }
+  .timeline-labels {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+  }
+  .timeline-labels .progress { color: var(--accent); font-weight: 600; }
+
+  .footer-right { text-align: right; font-size: 11px; color: var(--muted); }
+  .footer-right .big {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; color: var(--text); font-weight: 600;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">ROBOT&nbsp;DIGITAL&nbsp;TWIN<span class="sub">/ workcell_01</span></div>
+    <div class="modes">
+      <div class="mode">CAM</div>
+      <div class="mode active">LIVE</div>
+      <div class="mode">VIZ</div>
+    </div>
+    <div class="header-right">
+      <span class="pill"><span class="dot"></span> ONLINE</span>
+      <span class="robot-id mono">ABB IRB 6700-175/3.05</span>
+      <span class="mono" style="color:var(--muted)">S/N 6700-123124</span>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- LEFT PANEL -->
+    <aside class="left">
+      <div class="section">
+        <h3>Toolpaths</h3>
+        <div class="file-row active">
+          <div class="icon"></div>
+          <span>vase_v3.json</span>
+          <span class="meta">240L</span>
+        </div>
+        <div class="file-row">
+          <div class="icon"></div>
+          <span>wall_test_b.json</span>
+          <span class="meta">42L</span>
+        </div>
+        <div class="file-row">
+          <div class="icon"></div>
+          <span>bench_v1.json</span>
+          <span class="meta">186L</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Layers — vase_v3</h3>
+        <div class="layers">
+          <div class="layer"><span class="idx mono">09</span><span>z = 45.0mm</span><span class="moves mono">118</span></div>
+          <div class="layer"><span class="idx mono">10</span><span>z = 50.0mm</span><span class="moves mono">120</span></div>
+          <div class="layer"><span class="idx mono">11</span><span>z = 55.0mm</span><span class="moves mono">120</span></div>
+          <div class="layer active"><span class="idx mono">12</span><span>z = 60.0mm</span><span class="moves mono">120</span></div>
+          <div class="layer"><span class="idx mono">13</span><span>z = 65.0mm</span><span class="moves mono">118</span></div>
+          <div class="layer"><span class="idx mono">14</span><span>z = 70.0mm</span><span class="moves mono">118</span></div>
+          <div class="layer"><span class="idx mono">15</span><span>z = 75.0mm</span><span class="moves mono">116</span></div>
+          <div class="layer"><span class="idx mono">16</span><span>z = 80.0mm</span><span class="moves mono">116</span></div>
+          <div class="layer"><span class="idx mono">17</span><span>z = 85.0mm</span><span class="moves mono">114</span></div>
+          <div class="layer"><span class="idx mono">18</span><span>z = 90.0mm</span><span class="moves mono">114</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Workcell</h3>
+        <div class="file-row active"><div class="icon"></div><span>workcell.glb</span></div>
+        <div class="file-row"><div class="icon"></div><span>print_bed.glb</span></div>
+        <div class="file-row"><div class="icon"></div><span>positioner.glb</span></div>
+      </div>
+    </aside>
+
+    <!-- VIEWPORT -->
+    <section class="viewport">
+      <canvas id="canvas"></canvas>
+      <div class="overlay">
+
+        <div class="axes-readout">
+          <h4>TCP — world frame</h4>
+          <div class="axis-row"><span class="label">X</span><span class="val" id="tcp-x">1502.4</span><span class="unit" style="color:var(--muted)">mm</span></div>
+          <div class="axis-row"><span class="label">Y</span><span class="val" id="tcp-y">  201.1</span><span class="unit" style="color:var(--muted)">mm</span></div>
+          <div class="axis-row"><span class="label">Z</span><span class="val" id="tcp-z">   60.3</span><span class="unit" style="color:var(--muted)">mm</span></div>
+          <div class="axis-row"><span class="label">Rx</span><span class="val" id="tcp-rx">   0.0</span><span class="unit" style="color:var(--muted)">°</span></div>
+          <div class="axis-row"><span class="label">Ry</span><span class="val" id="tcp-ry">   0.0</span><span class="unit" style="color:var(--muted)">°</span></div>
+          <div class="axis-row"><span class="label">Rz</span><span class="val" id="tcp-rz">  90.0</span><span class="unit" style="color:var(--muted)">°</span></div>
+        </div>
+
+        <div class="view-tools">
+          <button class="btn-tool active" title="Perspective">⌖</button>
+          <button class="btn-tool" title="Top">▦</button>
+          <button class="btn-tool" title="Front">▣</button>
+          <button class="btn-tool" title="Side">◫</button>
+          <button class="btn-tool" title="Fit">⊡</button>
+        </div>
+
+        <div class="layer-badge">LAYER<span class="big mono">12</span>/ 240 &nbsp; · &nbsp; <span class="mono">move 84/120</span></div>
+
+        <div class="legend">
+          <div class="item"><span class="swatch" style="background:var(--print)"></span>Print</div>
+          <div class="item"><span class="swatch" style="background:var(--travel)"></span>Travel</div>
+          <div class="item"><span class="swatch" style="background:var(--ok)"></span>Deposited</div>
+          <div class="item" style="margin-left:12px; color:var(--muted)">grid: 100mm</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right">
+      <div class="section">
+        <h3>Program</h3>
+        <div class="program-row"><span class="k">File</span><span class="v">vase_v3.mod</span></div>
+        <div class="program-row"><span class="k">Layer</span><span class="v"><span style="color:var(--accent)">12</span> / 240</span></div>
+        <div class="program-row"><span class="k">Move</span><span class="v">84 / 120</span></div>
+        <div class="program-row"><span class="k">Elapsed</span><span class="v">01:18:42</span></div>
+        <div class="program-row"><span class="k">Remaining</span><span class="v">02:05:18</span></div>
+        <div class="program-row"><span class="k">ETA</span><span class="v">17:32 today</span></div>
+      </div>
+
+      <div class="section">
+        <h3>Extruder</h3>
+        <div class="telemetry-grid">
+          <div class="tile accent">
+            <div class="label">Temp</div>
+            <div class="value" id="temp">215<span class="unit">°C</span></div>
+          </div>
+          <div class="tile">
+            <div class="label">Flow</div>
+            <div class="value" id="flow">1.20<span class="unit">mm³/s</span></div>
+          </div>
+          <div class="tile">
+            <div class="label">Feed</div>
+            <div class="value">50<span class="unit">mm/s</span></div>
+          </div>
+          <div class="tile ok">
+            <div class="label">Pressure</div>
+            <div class="value">42<span class="unit">bar</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Joint state</h3>
+        <div id="joints"></div>
+      </div>
+
+      <div class="section">
+        <h3>Quality</h3>
+        <div class="program-row"><span class="k">TCP error</span><span class="v" style="color:var(--ok)">0.4 mm</span></div>
+        <div class="program-row"><span class="k">Bead width</span><span class="v">8.2 mm</span></div>
+        <div class="program-row"><span class="k">Layer time</span><span class="v">14.2 s</span></div>
+        <div class="program-row"><span class="k">Cum. material</span><span class="v">1.84 kg</span></div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="transport">
+      <button class="btn play">▶</button>
+      <button class="btn">⏸</button>
+      <button class="btn stop">■</button>
+      <button class="btn estop">!</button>
+    </div>
+    <div class="timeline">
+      <div class="timeline-bar">
+        <div class="timeline-fill"></div>
+        <div class="timeline-marker"></div>
+      </div>
+      <div class="timeline-labels">
+        <span class="mono">00:00:00</span>
+        <span class="progress mono">▶ 38% &nbsp;·&nbsp; layer 12/240 &nbsp;·&nbsp; move 84/120</span>
+        <span class="mono">03:24:00</span>
+      </div>
+    </div>
+    <div class="footer-right">
+      <div class="big mono">17:32</div>
+      <div>ETA today</div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ============== THREE.JS SCENE ============== -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const canvas = document.getElementById('canvas');
+const scene  = new THREE.Scene();
+scene.background = null;
+scene.fog = new THREE.Fog(0x0a0d12, 4, 10);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 100);
+camera.position.set(3.2, 2.4, 3.2);
+camera.lookAt(0, 0.6, 0);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+
+function resize() {
+  const r = canvas.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, 0.6, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 1.5;
+controls.maxDistance = 8;
+
+// lighting
+scene.add(new THREE.AmbientLight(0x6a7a8c, 0.4));
+const key = new THREE.DirectionalLight(0xffd99a, 1.2);
+key.position.set(3, 5, 3); key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x38d4ff, 0.6);
+rim.position.set(-3, 2, -2); scene.add(rim);
+
+// grid floor
+const grid = new THREE.GridHelper(6, 60, 0x2a3441, 0x1a2230);
+grid.material.transparent = true;
+grid.material.opacity = 0.7;
+scene.add(grid);
+
+const floor = new THREE.Mesh(
+  new THREE.CircleGeometry(3, 64),
+  new THREE.MeshStandardMaterial({ color: 0x0e131a, roughness: 0.9, metalness: 0.1 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.001;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// build a stylized 6-axis arm (proportions roughly IRB 6700)
+function mat(c, e=0) {
+  return new THREE.MeshStandardMaterial({
+    color: c, roughness: 0.45, metalness: 0.65,
+    emissive: new THREE.Color(c).multiplyScalar(e),
+  });
+}
+const ABB_ORANGE = 0xff7a00;
+const DARK = 0x2a3441;
+
+const base = new THREE.Group(); scene.add(base);
+
+// pedestal
+const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.4, 0.18, 32), mat(DARK));
+pedestal.position.y = 0.09; pedestal.castShadow = true; pedestal.receiveShadow = true;
+base.add(pedestal);
+
+// J1 (base rotation)
+const j1 = new THREE.Group(); j1.position.y = 0.18; base.add(j1);
+const j1body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.34, 0.5), mat(ABB_ORANGE));
+j1body.position.y = 0.17; j1body.castShadow = true; j1.add(j1body);
+
+// J2 (shoulder)
+const j2 = new THREE.Group(); j2.position.y = 0.34; j1.add(j2);
+const j2body = new THREE.Mesh(new THREE.BoxGeometry(0.34, 1.05, 0.42), mat(ABB_ORANGE));
+j2body.position.y = 0.5; j2body.castShadow = true; j2.add(j2body);
+const j2shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.6, 24), mat(DARK));
+j2shoulder.rotation.z = Math.PI / 2; j2.add(j2shoulder);
+
+// J3 (elbow)
+const j3 = new THREE.Group(); j3.position.y = 1.05; j2.add(j3);
+const j3body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 1.1), mat(ABB_ORANGE));
+j3body.position.z = 0.5; j3body.castShadow = true; j3.add(j3body);
+const j3elbow = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.46, 24), mat(DARK));
+j3elbow.rotation.z = Math.PI / 2; j3.add(j3elbow);
+
+// J4 (wrist roll)
+const j4 = new THREE.Group(); j4.position.z = 1.05; j3.add(j4);
+const j4body = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.36, 24), mat(ABB_ORANGE));
+j4body.rotation.x = Math.PI / 2; j4body.position.z = 0.18; j4body.castShadow = true; j4.add(j4body);
+
+// J5 (wrist pitch)
+const j5 = new THREE.Group(); j5.position.z = 0.34; j4.add(j5);
+const j5body = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 16), mat(DARK));
+j5body.castShadow = true; j5.add(j5body);
+
+// J6 + tool flange
+const j6 = new THREE.Group(); j5.add(j6);
+const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 24), mat(0x202830));
+flange.rotation.x = Math.PI / 2; flange.position.z = 0.08; j6.add(flange);
+
+// extruder end-effector
+const extruder = new THREE.Group(); extruder.position.z = 0.11; j6.add(extruder);
+const extBody = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.32, 16), mat(0x1a1f27, 0.05));
+extBody.rotation.x = Math.PI / 2; extBody.position.z = 0.16; extruder.add(extBody);
+const nozzle = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.06, 16), mat(0xffb547, 0.6));
+nozzle.rotation.x = Math.PI;
+nozzle.position.z = 0.35; extruder.add(nozzle);
+
+// nozzle glow
+const glow = new THREE.PointLight(0xffb547, 0.6, 0.6);
+glow.position.z = 0.36; extruder.add(glow);
+
+// ====== TOOLPATH (stylized vase) ======
+// build a layered helical toolpath
+const tpGroup = new THREE.Group(); scene.add(tpGroup);
+const printPts = [];
+const totalLayers = 24;
+const ptsPerLayer = 80;
+for (let L = 0; L < totalLayers; L++) {
+  const z = 0.36 + L * 0.018;
+  const radius = 0.28 + Math.sin(L * 0.4) * 0.04;
+  for (let i = 0; i < ptsPerLayer; i++) {
+    const t = i / ptsPerLayer;
+    const a = t * Math.PI * 2 + L * 0.05;
+    const r = radius * (1 + 0.06 * Math.cos(a * 5));
+    printPts.push(new THREE.Vector3(
+      Math.cos(a) * r + 0.85,   // offset along X (in front of robot)
+      z,
+      Math.sin(a) * r
+    ));
+  }
+}
+
+// deposited portion (already printed — solid amber tube)
+const cutoff = Math.floor(printPts.length * 0.38);
+const depositedCurve = new THREE.CatmullRomCurve3(printPts.slice(0, cutoff));
+const depositedGeo = new THREE.TubeGeometry(depositedCurve, cutoff * 1, 0.008, 8, false);
+const depositedMat = new THREE.MeshStandardMaterial({
+  color: 0xffb547, roughness: 0.7, metalness: 0.1,
+  emissive: 0x331a00, emissiveIntensity: 0.4
+});
+const deposited = new THREE.Mesh(depositedGeo, depositedMat);
+deposited.castShadow = true;
+tpGroup.add(deposited);
+
+// upcoming portion (cyan line — planned)
+const upcomingPts = printPts.slice(cutoff);
+const upcomingGeo = new THREE.BufferGeometry().setFromPoints(upcomingPts);
+const upcomingMat = new THREE.LineBasicMaterial({
+  color: 0x38d4ff, transparent: true, opacity: 0.55
+});
+const upcoming = new THREE.Line(upcomingGeo, upcomingMat);
+tpGroup.add(upcoming);
+
+// current TCP indicator
+const tcpMarker = new THREE.Mesh(
+  new THREE.SphereGeometry(0.018, 16, 12),
+  new THREE.MeshBasicMaterial({ color: 0xffffff })
+);
+tpGroup.add(tcpMarker);
+
+// build platform
+const buildPlate = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.5, 0.5, 0.04, 64),
+  new THREE.MeshStandardMaterial({ color: 0x161c25, roughness: 0.4, metalness: 0.8 })
+);
+buildPlate.position.set(0.85, 0.34, 0);
+buildPlate.receiveShadow = true;
+scene.add(buildPlate);
+
+// ====== animation: jog the arm gently to feel "live" ======
+const jointEls = document.getElementById('joints');
+const jointDefs = [
+  { name: 'J1', base: 12,  range: 6 },
+  { name: 'J2', base: 38,  range: 4 },
+  { name: 'J3', base: -22, range: 5 },
+  { name: 'J4', base: 0,   range: 8 },
+  { name: 'J5', base: 64,  range: 3 },
+  { name: 'J6', base: -45, range: 10 },
+];
+for (const j of jointDefs) {
+  const row = document.createElement('div');
+  row.className = 'joint-row';
+  row.innerHTML = `
+    <span class="name">${j.name}</span>
+    <span class="val" data-name="${j.name}">0.00°</span>
+    <div class="joint-bar"><div class="fill" data-fill="${j.name}" style="left:50%; width:0%"></div></div>
+    <span class="lim">±${j.name === 'J1' ? '170' : j.name === 'J4' ? '300' : '130'}°</span>
+  `;
+  jointEls.appendChild(row);
+}
+
+function animate(t) {
+  const s = t * 0.001;
+
+  // animate arm joints
+  const angles = jointDefs.map(j => j.base + Math.sin(s * 0.6 + jointDefs.indexOf(j)) * j.range);
+  j1.rotation.y = THREE.MathUtils.degToRad(angles[0]);
+  j2.rotation.x = THREE.MathUtils.degToRad(-angles[1] + 30);
+  j3.rotation.x = THREE.MathUtils.degToRad(angles[2]);
+  j4.rotation.z = THREE.MathUtils.degToRad(angles[3]);
+  j5.rotation.x = THREE.MathUtils.degToRad(angles[4] - 64);
+  j6.rotation.z = THREE.MathUtils.degToRad(angles[5]);
+
+  // joint readouts
+  jointDefs.forEach((j, i) => {
+    const el = jointEls.querySelector(`[data-name="${j.name}"]`);
+    if (el) el.textContent = angles[i].toFixed(2) + '°';
+    const fill = jointEls.querySelector(`[data-fill="${j.name}"]`);
+    if (fill) {
+      const pct = ((angles[i] + 180) / 360) * 100;
+      fill.style.left = '50%';
+      fill.style.width = Math.abs(angles[i] / 180 * 50) + '%';
+      fill.style.transform = angles[i] < 0 ? 'translateX(-100%)' : 'none';
+    }
+  });
+
+  // animate TCP marker along the deposited path
+  const idx = cutoff - 1;
+  const p = printPts[idx];
+  tcpMarker.position.copy(p);
+
+  // jitter the TCP readout subtly
+  const tcpReadout = (id, base, jitter) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (base + (Math.sin(s * 2 + id.length) * jitter)).toFixed(1).padStart(7, ' ');
+  };
+  tcpReadout('tcp-x', 1502.4, 0.4);
+  tcpReadout('tcp-y',  201.1, 0.3);
+  tcpReadout('tcp-z',   60.3, 0.05);
+  tcpReadout('tcp-rx',   0.0, 0.2);
+  tcpReadout('tcp-ry',   0.0, 0.2);
+  tcpReadout('tcp-rz',  90.0, 0.4);
+
+  // jitter telemetry
+  document.getElementById('temp').innerHTML = (215 + Math.sin(s) * 0.6).toFixed(0) + '<span class="unit">°C</span>';
+  document.getElementById('flow').innerHTML = (1.20 + Math.sin(s * 1.4) * 0.02).toFixed(2) + '<span class="unit">mm³/s</span>';
+
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+
+</script>
+</body>
+</html>

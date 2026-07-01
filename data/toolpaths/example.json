@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "units": "mm",
+  "generated_at": "2026-05-19T15:32:00Z",
+  "source": {
+    "tool": "grasshopper",
+    "file": "example.gh",
+    "author": "shiny"
+  },
+  "robot": {
+    "model": "ABB IRB 6700-175/3.05",
+    "tcp_frame": "tool0",
+    "base_frame": "world"
+  },
+  "tool": {
+    "type": "extruder",
+    "id": "pellet_extruder_v2",
+    "offset": [0, 0, 250, 0, 0, 0, 1]
+  },
+  "layers": [
+    {
+      "id": 0,
+      "z_nominal": 0.0,
+      "moves": [
+        {"type": "travel", "pose": [1500.0,    0.0, 100.0, 0.0, 0.0, 0.0, 1.0], "feed": 200.0, "extrude": 0.0},
+        {"type": "print",  "pose": [1500.0,  200.0,   0.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2},
+        {"type": "print",  "pose": [1700.0,  200.0,   0.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2},
+        {"type": "print",  "pose": [1700.0,    0.0,   0.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2},
+        {"type": "print",  "pose": [1500.0,    0.0,   0.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2}
+      ]
+    },
+    {
+      "id": 1,
+      "z_nominal": 5.0,
+      "moves": [
+        {"type": "travel", "pose": [1500.0,    0.0, 100.0, 0.0, 0.0, 0.0, 1.0], "feed": 200.0, "extrude": 0.0},
+        {"type": "print",  "pose": [1500.0,  200.0,   5.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2},
+        {"type": "print",  "pose": [1700.0,  200.0,   5.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2},
+        {"type": "print",  "pose": [1700.0,    0.0,   5.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2},
+        {"type": "print",  "pose": [1500.0,    0.0,   5.0, 0.0, 0.0, 0.0, 1.0], "feed":  50.0, "extrude": 1.2}
+      ]
+    }
+  ]
+}
